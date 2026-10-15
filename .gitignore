@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# Regenerate with: python train.py --epochs 12
+model.pt
+model.onnx
+# Regenerate with: python make_calib_data.py
+calib_images.npy
+calib.cache
+# Regenerate with: python gate.py
+*.plan
+gate_report.json

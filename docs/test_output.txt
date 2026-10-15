@@ -1,0 +1,20 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-9.1.1, pluggy-1.7.0 -- /mnt/c/Users/Manas/Downloads/Auto Job Applier/Total Job Application process flow/projects/tensorrt-precision-latency-gate/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /mnt/c/Users/Manas/Downloads/Auto Job Applier/Total Job Application process flow
+configfile: pytest.ini
+collecting ... collected 10 items
+
+tests/test_build_and_run_engine.py::test_fp32_engine_matches_pytorch_reference PASSED [ 10%]
+tests/test_build_and_run_engine.py::test_fp16_engine_runs_fp16_end_to_end PASSED [ 20%]
+tests/test_build_and_run_engine.py::test_int8_qdq_engine_builds_and_runs PASSED [ 30%]
+tests/test_gate_logic.py::test_per_class_logit_diff_zero_for_identical_tensors PASSED [ 40%]
+tests/test_gate_logic.py::test_per_class_logit_diff_isolates_the_corrupted_class PASSED [ 50%]
+tests/test_gate_logic.py::test_accuracy_budget_is_one_percent PASSED     [ 60%]
+tests/test_gate_logic.py::test_blocked_decision_matches_the_documented_rule PASSED [ 70%]
+tests/test_model.py::test_forward_pass_shape PASSED                      [ 80%]
+tests/test_model.py::test_dynamic_batch_size PASSED                      [ 90%]
+tests/test_model.py::test_parameter_count_is_small_enough_to_train_in_minutes PASSED [100%]
+
+============================= 10 passed in 43.65s ==============================
+PYTEST_EXIT=0
