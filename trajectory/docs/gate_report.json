@@ -1,0 +1,39 @@
+{
+  "framework_ade_m": 1.5909494161605835,
+  "accuracy_budget_relative": 0.01,
+  "precisions": {
+    "fp32": {
+      "ade_m": 1.5908660888671875,
+      "relative_ade_increase": -5.237582826303096e-05,
+      "blocked": false,
+      "latency": {
+        "p50_ms": 0.34422200008066284,
+        "p99_ms": 1.4510260500605898,
+        "n_requests": 300,
+        "batch_size": 1
+      }
+    },
+    "fp16": {
+      "ade_m": 1.5907080173492432,
+      "relative_ade_increase": -0.0001517325496890382,
+      "blocked": false,
+      "latency": {
+        "p50_ms": 0.34515899994858046,
+        "p99_ms": 1.5106201299113309,
+        "n_requests": 300,
+        "batch_size": 1
+      }
+    },
+    "int8": {
+      "ade_m": 1.6105668544769287,
+      "relative_ade_increase": 0.012330648678754169,
+      "blocked": true,
+      "latency": {
+        "p50_ms": 0.2704019999555385,
+        "p99_ms": 1.2988159401106711,
+        "n_requests": 300,
+        "batch_size": 1
+      }
+    }
+  }
+}

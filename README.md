@@ -129,6 +129,93 @@ No existing repo in the portfolio touches TensorRT, ONNX or calibrated INT8 quan
 - The calibration set is 512 images; a larger or differently-sampled calibration set could shift INT8's measured accuracy and the per-class diff numbers.
 - `measure_latency`'s dummy input batch is fixed random noise, not real images; this is standard practice for a pure latency/throughput measurement (the engine's compute graph does the same work regardless of pixel content) but it is not the same measurement as end-to-end accuracy, which uses the real CIFAR-10 test set.
 
+## Extension: Path-Generation Network Ranked in Closed Loop (`trajectory/`, Oct. 2026)
+
+A trajectory decoder that emits a 3-second future path from a rasterized bird's-eye-view context, ranked twice (open loop on displacement error, closed loop on collision and off-route rate over a rollout) and then compiled through this repo's own TensorRT precision pipeline (`engines/build_engine.py`, `engines/runner.py`, `quantize_int8.py`, all reused unmodified). Every number in this section was measured on this machine via the commands below, not targeted.
+
+**Relationship to the rest of this repo.** The deployment path (TensorRT engine build, the strongly-typed-network workaround, the QDQ INT8 export, the tensor-address `EngineRunner`) is reused exactly as the CIFAR-10 gate above uses it. Nothing about that gate's own measurements changes: `ckpt_c.pt`/`ckpt_c.onnx` and the rest of `trajectory/` are new files; `model/cnn.py`, `train.py`, `gate.py` at the repo root are untouched.
+
+### What this is, honestly
+
+- **A toy rule-based "ground truth", not a real planner.** The 3-second label every checkpoint is trained to imitate comes from `scenario.py`'s own linear car-following and scripted-lane-shift rule (`rollout_rule_based_path`), written independently of (and much simpler than) the IDM/MOBIL model in the sibling `batched-gpu-driving-scenario-simulator` repo. Its only job is to give the decoder a nontrivial, learnable target.
+- **Closed-loop here means single-shot rollout, not iterative replanning.** The model predicts one path from the t=0 BEV and that path is checked against every obstacle's own independent constant-speed motion over the full 3 seconds; the model does not get to replan mid-episode. An earlier version of this environment replanned every 0.9 seconds and tracked obstacles in a continuously re-centered relative frame; that version had a bookkeeping bug (see Findings) and was replaced by this simpler, verified design rather than patched.
+- **A regression analog of the root gate's accuracy budget, not the same metric.** The root gate blocks a precision whose absolute top-1 drop exceeds 1%. There is no "top-1" for a continuous path, so the budget here is the *relative* increase in average displacement error (ADE) versus the fp32 PyTorch framework reference, gated at the same 1%.
+- **32x32, 3-channel, synthetic BEV rasters**, not camera-derived occupancy grids: channel 0 is a static lane-boundary mask, channel 1 is obstacle occupancy, channel 2 carries obstacle closing speed and the ego's own speed as a corner marker. Real perception would feed this decoder a rasterized output of an actual detection/tracking stack; none exists here.
+
+**Machine and toolchain.** Same as above: WSL2 Ubuntu 22.04 on Windows 11, one RTX 4070 SUPER (sm_89), TensorRT 11.4.0.106, PyTorch 2.14.1+cu130, ONNX 1.23.2, onnxruntime, Python 3.10.12.
+
+### Architecture
+
+```
+trajectory/
+  scenario.py           BEV raster + toy rule-based ground-truth path generator
+  dataset.py             seed-ranged train/val/test splits over scenario.py
+  model.py                TrajectoryDecoder: small CNN encoder + MLP head -> 10 waypoints
+  metrics.py              average/final displacement error (ADE/FDE)
+  train.py                 trains 3 checkpoints (hidden=32/64/128, named a/b/c)
+  open_loop_eval.py       ranks the 3 checkpoints by ADE on a held-out test split
+  closed_loop_env.py      single-shot rollout: collision rate, off-route rate, closest-approach
+  closed_loop_eval.py     ranks the 3 checkpoints by closed-loop score
+  rank_compare.py         counts how many of the 3 ranked positions disagree
+  export_fp16.py          fp16 ONNX export (same mechanism as the repo-root export_fp16.py)
+  make_calib_data.py      INT8 calibration images, from the train seed range only
+  gate.py                  builds fp32/fp16/int8 engines for the best checkpoint, measures the
+                           error budget and p50/p99 latency at batch 1
+  tests/                   pytest: scenario determinism, model/metrics unit tests, closed-loop
+                           env sanity, rank-disagreement counting, and a real TensorRT
+                           build/run/quantize reference-oracle test (mirrors the repo-root one)
+  docs/                    committed raw pipeline and test output, and the JSON reports
+```
+
+### Validation
+
+1. **Unit tests** (`trajectory/tests/`, 18 pytest cases): scenario generation is deterministic for a fixed seed and makes non-decreasing forward progress; the model's output shape and parameter counts; ADE/FDE against hand-computed constant-offset cases; the closed-loop environment's rates stay in [0, 1] and are deterministic for a fixed seed; the rank-disagreement counter against hand-built ranking pairs.
+2. **TensorRT reference-oracle test** (`test_build_and_run_engine.py`): a tiny (hidden=8) `TrajectoryDecoder` exported fp32/fp16, and quantized to an INT8 QDQ graph, each compiled to a real engine via this repo's own `build_engine`/`EngineRunner`/`quantize`, diffed against the PyTorch model actually exported. Same shape of check `gate.py` runs at full scale.
+
+Raw output: `docs/test_output.txt`.
+
+### Findings
+
+**The first closed-loop environment design made collision rate literally invariant to which checkpoint was driving.** Three checkpoints with visibly different open-loop ADE (1.21-1.48m) produced the exact same closed-loop collision count, 98 of 300 episodes, to the integer. The first hypothesis was that the three checkpoints had converged to near-identical short-horizon behavior; that was ruled out directly (a dummy zero-motion model measured 0% collisions and a dummy non-braking model measured 26%, so the environment does respond to genuinely different inputs). The measurement that discriminated: a continuous "closest approach" metric added to distinguish near-misses came back as a two-valued signal (either a fixed sentinel or exactly 0), which meant the same-lane detection in the multi-cycle replanning loop was only ever triggering in the instant of collision itself, never before it, a sign of a relative-frame bookkeeping error in how obstacle lanes were re-centered after each replanning cycle's lateral motion. Root cause: the multi-cycle design carried `ego_lat_abs`, a per-cycle `lane_shift`, and each obstacle's lane index all as separately updated state that had to stay consistent by hand; it was not. The fix was not to debug that state machine further but to replace it with the single-shot design in this section's "What this is, honestly": one prediction, checked against obstacles' own independent motion with no relative-frame bookkeeping at all. The same three checkpoints, re-measured under the fixed environment, produced genuinely different collision rates (2.0-3.3%).
+
+**Weak car-following gains made the ground-truth generator itself collide in a third of scenarios, independent of any model.** Before the single-shot fix above, a separate check (bypassing every model and calling the ground-truth rule directly inside the same closed-loop wrapper) found the rule-based "label" generator collided in 98 of the same 300 scenarios used to measure the checkpoints. The original gains (0.15 gap-error, 0.3 closing-speed, clipped to -4.0 m/s^2) computed only mild deceleration even at short gaps (e.g. -3 m/s^2 at a 5.5m gap closing at 3.3 m/s), nowhere near enough to avoid a collision at this scenario generator's sampled ranges (8-35m gaps, 10-16 m/s). The fix was stronger gains (0.6/1.0) and a wider, earlier lane-change trigger (gap < 15m, closing > 1.0 m/s instead of 10m/2.0 m/s), closer to real hard-braking authority (-8 m/s^2 instead of -4). This was necessary before the environment redesign above could even be evaluated meaningfully: a label generator that fails a third of the time regardless of the policy makes any closed-loop ranking built from it uninterpretable.
+
+### Measured results
+
+Machine: WSL2 Ubuntu 22.04, RTX 4070 SUPER, TensorRT 11.4.0.106. Raw output in `docs/pipeline_output.txt`, `docs/open_loop_report.json`, `docs/closed_loop_report.json`, `docs/rank_compare_report.json`, `docs/gate_report.json`.
+
+**Open-loop ranking (ADE, lower is better):** c (1.591m) < a (1.661m) < b (1.878m).
+
+**Closed-loop ranking (collision + off-route rate, lower is better, 300 episodes each):** c (2.0%) < a (2.7%) < b (3.3%).
+
+**The one number this project's design set out to defend was a ranking disagreement; this session measured 0 of 3 positions disagreeing, not the 2 of 3 originally targeted.** Both metrics picked checkpoint c best and b worst. This is reported as measured rather than adjusted: at this toy task's difficulty level (a single rule-based car-following/lane-shift behavior, no adversarial scenario curation, no partial observability), better short-horizon displacement accuracy and better collision avoidance turned out to be the same thing to measure, not two different things. The research literature's documented open-loop/closed-loop divergence for real autonomous-driving policies most plausibly needs either harder, more adversarial scenarios than this generator produces, or a genuinely iterative replanning loop where small per-step errors compound over many cycles, which the single-shot design deliberately does not model (see Findings for why the iterative version was abandoned instead of fixed further this session).
+
+**TensorRT INT8 breached the 1% relative-ADE budget at 1.23%,** on checkpoint c (the best-ranked checkpoint both ways), measured against the fp32 PyTorch framework reference (ADE 1.591m). FP16 stayed inside budget (-0.02%, i.e. fp16's ADE was very slightly *better* than fp32's on this held-out set, well within noise).
+
+**p50 and p99 latency at batch 1, one GPU:** fp32 0.344ms / 1.451ms, fp16 0.345ms / 1.511ms, int8 0.270ms / 1.299ms. At this model's size (three small conv layers, ~140K-2.1M parameters depending on checkpoint), the batch-1 latency floor is dominated by kernel-launch and TensorRT execution-graph overhead rather than compute, which is why int8's p50 speedup over fp32 (1.27x) is far smaller than the throughput speedups the repo-root CIFAR-10 gate would see at larger batch sizes.
+
+### Building and running
+
+```
+source venv/bin/activate   # repo-root venv; no new dependencies
+cd trajectory
+PYTHONPATH=.. python -m trajectory.train --epochs 15
+PYTHONPATH=.. python -m trajectory.open_loop_eval
+PYTHONPATH=.. python -m trajectory.closed_loop_eval
+PYTHONPATH=.. python -m trajectory.rank_compare
+PYTHONPATH=.. python -m trajectory.make_calib_data --num-images 512
+PYTHONPATH=.. python -m trajectory.gate --checkpoint ckpt_c.pt --hidden 128 --onnx ckpt_c.onnx --calib-npy calib_bev.npy --out gate_report.json
+
+cd .. && PYTHONPATH=. python -m pytest trajectory/tests -v
+```
+
+### Extension limitations
+
+- The closed-loop environment is single-shot (see "What this is, honestly"); it does not model the compounding error of real iterative replanning, which is the more common setting in which open-loop and closed-loop rankings are reported to diverge.
+- The scenario generator's obstacles never change lanes and move at a constant speed once sampled; the only closed-loop-relevant decision is the ego's own braking and lane choice.
+- 8-vehicle, single-ego, 3-lane ring-road-free scenarios only; there is no multi-agent interaction beyond the ego and up to 2 scripted obstacles.
+- INT8 calibration reuses the repo-root's onnxruntime per-tensor min/max method (see the repo-root Limitations); the same caveat about a KL-divergence calibrator potentially changing the measured accuracy drop applies here.
+
 ## Sources
 
 1. NVIDIA TensorRT, "Migrating from TensorRT 10.x to 11.x" (removed precision builder flags, strong typing always on, implicit quantization unsupported): https://docs.nvidia.com/deeplearning/tensorrt/latest/api/migration/tensorrt-10x-to-11x.html

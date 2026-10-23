@@ -1,0 +1,14 @@
+{
+  "open_loop_ranking": [
+    "c",
+    "a",
+    "b"
+  ],
+  "closed_loop_ranking": [
+    "c",
+    "a",
+    "b"
+  ],
+  "n_positions": 3,
+  "n_disagree": 0
+}

@@ -1,0 +1,30 @@
+{
+  "results": {
+    "a": {
+      "n_episodes": 300,
+      "collision_rate": 0.02666666666666667,
+      "off_route_rate": 0.0,
+      "score": 0.02666666666666667,
+      "mean_closest_approach_m": 31.131499389012653
+    },
+    "b": {
+      "n_episodes": 300,
+      "collision_rate": 0.03333333333333333,
+      "off_route_rate": 0.0,
+      "score": 0.03333333333333333,
+      "mean_closest_approach_m": 30.870500780741374
+    },
+    "c": {
+      "n_episodes": 300,
+      "collision_rate": 0.02,
+      "off_route_rate": 0.0,
+      "score": 0.02,
+      "mean_closest_approach_m": 31.235914818445842
+    }
+  },
+  "ranking": [
+    "c",
+    "a",
+    "b"
+  ]
+}

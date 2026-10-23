@@ -1,0 +1,25 @@
+$ python -m pytest trajectory/tests -v
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-9.1.1, pluggy-1.7.0
+collected 18 items
+
+trajectory/tests/test_build_and_run_engine.py::test_fp32_engine_matches_pytorch_reference PASSED
+trajectory/tests/test_build_and_run_engine.py::test_fp16_engine_runs_fp16_end_to_end PASSED
+trajectory/tests/test_build_and_run_engine.py::test_int8_qdq_engine_builds_and_runs PASSED
+trajectory/tests/test_closed_loop_env.py::test_rollout_episode_returns_expected_keys PASSED
+trajectory/tests/test_closed_loop_env.py::test_evaluate_closed_loop_rates_are_in_unit_interval PASSED
+trajectory/tests/test_closed_loop_env.py::test_same_seed_is_deterministic PASSED
+trajectory/tests/test_metrics.py::test_zero_error_when_identical PASSED
+trajectory/tests/test_metrics.py::test_known_constant_offset PASSED
+trajectory/tests/test_metrics.py::test_fde_only_uses_last_waypoint PASSED
+trajectory/tests/test_model.py::test_forward_pass_shape PASSED
+trajectory/tests/test_model.py::test_different_hidden_sizes_are_different_parameter_counts PASSED
+trajectory/tests/test_rank_compare.py::test_identical_rankings_disagree_on_nothing PASSED
+trajectory/tests/test_rank_compare.py::test_fully_reversed_ranking_disagrees_on_all_three PASSED
+trajectory/tests/test_rank_compare.py::test_single_swap_disagrees_on_exactly_two_positions PASSED
+trajectory/tests/test_scenario.py::test_bev_shape_and_range PASSED
+trajectory/tests/test_scenario.py::test_path_shape_and_determinism PASSED
+trajectory/tests/test_scenario.py::test_ego_always_makes_forward_progress PASSED
+trajectory/tests/test_scenario.py::test_no_obstacles_means_free_road_cruise PASSED
+
+============================= 18 passed in 44.65s ==============================

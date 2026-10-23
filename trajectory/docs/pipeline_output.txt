@@ -1,0 +1,31 @@
+$ python -m trajectory.train --epochs 15
+[a] epoch 15/15 val_mse=2.7976 ... saved ckpt_a.pt and ckpt_a.onnx (hidden=32)
+[b] epoch 15/15 val_mse=3.3622 ... saved ckpt_b.pt and ckpt_b.onnx (hidden=64)
+[c] epoch 15/15 val_mse=2.4702 ... saved ckpt_c.pt and ckpt_c.onnx (hidden=128)
+
+$ python -m trajectory.open_loop_eval
+[a] ade=1.661m fde=2.729m
+[b] ade=1.878m fde=3.087m
+[c] ade=1.591m fde=2.585m
+open-loop ranking (best ADE first): ['c', 'a', 'b']
+
+$ python -m trajectory.closed_loop_eval
+[a] collision_rate=0.027 off_route_rate=0.000 score=0.027 mean_closest_approach_m=31.131
+[b] collision_rate=0.033 off_route_rate=0.000 score=0.033 mean_closest_approach_m=30.871
+[c] collision_rate=0.020 off_route_rate=0.000 score=0.020 mean_closest_approach_m=31.236
+closed-loop ranking (best score first): ['c', 'a', 'b']
+
+$ python -m trajectory.rank_compare
+open-loop ranking (best ADE first):              ['c', 'a', 'b']
+closed-loop ranking (best collision+off-route):  ['c', 'a', 'b']
+disagreement: 0 of 3 ranked positions differ
+
+$ python -m trajectory.make_calib_data --num-images 512
+$ python -m trajectory.gate --checkpoint ckpt_c.pt --hidden 128 --onnx ckpt_c.onnx --calib-npy calib_bev.npy --out gate_report.json
+framework (fp32 PyTorch) ADE: 1.5909 m
+built engine_fp32.plan from ckpt_c.onnx
+built engine_fp16.plan from ckpt_best_fp16.onnx
+built engine_int8.plan from ckpt_best_int8_qdq.onnx
+fp32: ade=1.5909m rel_increase=-0.01% p50=0.344ms p99=1.451ms -> passed
+fp16: ade=1.5907m rel_increase=-0.02% p50=0.345ms p99=1.511ms -> passed
+int8: ade=1.6106m rel_increase=1.23% p50=0.270ms p99=1.299ms -> BLOCKED (error budget breached)

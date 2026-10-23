@@ -1,13 +1,25 @@
-venv/
+/venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 # Regenerate with: python train.py --epochs 12
-model.pt
-model.onnx
+/model.pt
+/model.onnx
 # Regenerate with: python make_calib_data.py
-calib_images.npy
-calib.cache
+/calib_images.npy
+/calib.cache
 # Regenerate with: python gate.py
 *.plan
-gate_report.json
+/gate_report.json
+
+# trajectory/ extension: regenerate with the commands in its README section
+# (leading slash so these do not also match the committed trajectory/docs/ copies)
+/trajectory/ckpt_*.pt
+/trajectory/ckpt_*.onnx
+/trajectory/*_fp16.onnx
+/trajectory/*_int8_qdq.onnx
+/trajectory/calib_bev.npy
+/trajectory/gate_report.json
+/trajectory/open_loop_report.json
+/trajectory/closed_loop_report.json
+/trajectory/rank_compare_report.json
