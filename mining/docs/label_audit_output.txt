@@ -1,0 +1,12 @@
+{
+  "num_mined_frames_available": 34906,
+  "num_audited": 1000,
+  "num_true_positive": 859,
+  "precision": 0.859,
+  "per_true_class_in_audit_sample": {
+    "construction_zone": 227,
+    "low_light": 371,
+    "normal": 141,
+    "wet_surface": 261
+  }
+}

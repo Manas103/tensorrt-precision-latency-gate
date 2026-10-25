@@ -1,0 +1,19 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 9503.21it/s]
+{
+  "num_frames_scored": 200000,
+  "elapsed_s": 249.64,
+  "frames_per_sec": 801.1,
+  "true_label_counts": {
+    "normal": 170013,
+    "low_light": 12010,
+    "wet_surface": 9941,
+    "construction_zone": 8036
+  },
+  "pred_label_counts": {
+    "normal": 165094,
+    "low_light": 11880,
+    "wet_surface": 7902,
+    "construction_zone": 15124
+  }
+}

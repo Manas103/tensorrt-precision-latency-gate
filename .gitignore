@@ -1,4 +1,5 @@
 /venv/
+/venv-mining/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -23,3 +24,16 @@ __pycache__/
 /trajectory/open_loop_report.json
 /trajectory/closed_loop_report.json
 /trajectory/rank_compare_report.json
+
+# mining/ extension: the 200,000-frame VLM score cache, trained checkpoints, exported ONNX
+# graphs, compiled engines and calibration data. Regenerate with the commands in its README
+# section (python -m mining.corpus_mine, mining.compare_run, mining.make_calib_data, mining.gate).
+/mining/corpus_scores.npz
+/mining/calib_frames.npy
+/mining/ckpt_*.pt
+/mining/ckpt_*.onnx
+/mining/*_fp16.onnx
+/mining/*_int8_qdq.onnx
+/mining/engine_*.plan
+/mining/gate_report.json
+/mining/compare_report.json

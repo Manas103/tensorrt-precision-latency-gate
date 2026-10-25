@@ -1,0 +1,12 @@
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+WARNING:root:Please consider pre-processing before quantization. See https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+framework (fp32 PyTorch) accuracy: 0.9623
+built mining/engine_fp32.plan from mining/ckpt_mined.onnx
+built mining/engine_fp16.plan from mining/ckpt_mined_fp16.onnx
+built mining/engine_int8.plan from mining/ckpt_mined_int8_qdq.onnx
+fp32: accuracy=0.9623 drop=0.0000 p50=0.4218ms p99=0.5570ms -> passed
+fp16: accuracy=0.9624 drop=-0.0001 p50=0.5605ms p99=0.6776ms -> passed
+int8: accuracy=0.9621 drop=0.0002 p50=0.1524ms p99=0.2356ms -> passed
+fp16 p99 latency speedup vs fp32: 0.82x
+int8 p99 latency speedup vs fp32: 2.36x
+wrote mining/gate_report.json

@@ -1,0 +1,43 @@
+{
+  "train_mined": {
+    "strategy": "mined",
+    "n_train": 300,
+    "rare_fraction_in_train": 0.5,
+    "final_loss": 0.4250500098864238,
+    "checkpoint": "mining/ckpt_mined.pt"
+  },
+  "train_uniform": {
+    "strategy": "uniform",
+    "n_train": 300,
+    "rare_fraction_in_train": 0.13666666666666666,
+    "final_loss": 0.2854611221949259,
+    "checkpoint": "mining/ckpt_uniform.pt"
+  },
+  "eval_mined": {
+    "checkpoint": "mining/ckpt_mined.pt",
+    "n_test": 10000,
+    "overall_accuracy": 0.9623,
+    "precision_rare": 1.0,
+    "recall_rare": 0.7381944444444445,
+    "low_light_recall": 1.0,
+    "per_class_recall": {
+      "low_light": 1.0,
+      "wet_surface": 0.9937106918238994,
+      "construction_zone": 0.0
+    }
+  },
+  "eval_uniform": {
+    "checkpoint": "mining/ckpt_uniform.pt",
+    "n_test": 10000,
+    "overall_accuracy": 0.9149,
+    "precision_rare": 1.0,
+    "recall_rare": 0.40902777777777777,
+    "low_light_recall": 1.0,
+    "per_class_recall": {
+      "low_light": 1.0,
+      "wet_surface": 0.0,
+      "construction_zone": 0.0
+    }
+  },
+  "low_light_recall_gap_points": 0.0
+}

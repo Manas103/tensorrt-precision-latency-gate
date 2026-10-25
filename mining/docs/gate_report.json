@@ -1,0 +1,41 @@
+{
+  "framework_accuracy": 0.9623000025749207,
+  "accuracy_budget": 0.01,
+  "precisions": {
+    "fp32": {
+      "accuracy": 0.9623000025749207,
+      "accuracy_drop_vs_framework": 0.0,
+      "blocked": false,
+      "latency": {
+        "p50_ms": 0.42180950003967155,
+        "p99_ms": 0.5569706597907498,
+        "n_requests": 300,
+        "batch_size": 1
+      }
+    },
+    "fp16": {
+      "accuracy": 0.9624000191688538,
+      "accuracy_drop_vs_framework": -0.00010001659393310547,
+      "blocked": false,
+      "latency": {
+        "p50_ms": 0.5605369999557297,
+        "p99_ms": 0.6775742000490936,
+        "n_requests": 300,
+        "batch_size": 1
+      },
+      "p99_speedup_vs_fp32": 0.8220068883236618
+    },
+    "int8": {
+      "accuracy": 0.9621000289916992,
+      "accuracy_drop_vs_framework": 0.00019997358322143555,
+      "blocked": false,
+      "latency": {
+        "p50_ms": 0.15236950025609985,
+        "p99_ms": 0.23558524964755628,
+        "n_requests": 300,
+        "batch_size": 1
+      },
+      "p99_speedup_vs_fp32": 2.3642000533734486
+    }
+  }
+}
